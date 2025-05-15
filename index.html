@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Console</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: var(--primary);
+            margin-top: 0;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #4338ca;
+        }
+        
+        #response {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 6px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            min-height: 100px;
+            white-space: pre-wrap;
+            font-family: 'Menlo', 'Monaco', monospace;
+        }
+        
+        .success {
+            color: var(--success);
+        }
+        
+        .error {
+            color: var(--error);
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Test Console</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="signin">Sign In</div>
+            <div class="tab" data-tab="custom">Custom Request</div>
+        </div>
+        
+        <div id="signin-tab">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="user@example.com" value="test@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Your password" value="test123">
+            </div>
+            
+            <button id="signin-btn">Test Sign In</button>
+        </div>
+        
+        <div id="custom-tab" style="display: none;">
+            <div class="form-group">
+                <label for="method">HTTP Method</label>
+                <select id="method">
+                    <option value="GET">GET</option>
+                    <option value="POST" selected>POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="endpoint">Endpoint</label>
+                <input type="text" id="endpoint" value="/api/authentication/signin">
+            </div>
+            
+            <div class="form-group">
+                <label for="payload">Request Payload (JSON)</label>
+                <textarea id="payload" rows="5">{
+    "email": "test@example.com",
+    "password": "test123"
+}</textarea>
+            </div>
+            
+            <button id="send-btn">Send Request</button>
+        </div>
+        
+        <h3>Response</h3>
+        <div id="response">Click the button to test the API...</div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.getElementById('signin-tab').style.display = 'none';
+                document.getElementById('custom-tab').style.display = 'none';
+                
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-tab`).style.display = 'block';
+            });
+        });
+        
+        // Sign in test
+        document.getElementById('signin-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('https://dev.mindwave.kz/api/authentication/signin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include' // For cookies if needed
+                });
+                
+                const data = await response.json();
+                displayResponse(response.status, data);
+            } catch (error) {
+                displayError(error);
+            }
+        });
+        
+        // Custom request test
+        document.getElementById('send-btn').addEventListener('click', async () => {
+            const method = document.getElementById('method').value;
+            const endpoint = document.getElementById('endpoint').value;
+            const payload = document.getElementById('payload').value;
+            
+            try {
+                const config = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                };
+                
+                if (method !== 'GET') {
+                    config.body = payload;
+                }
+                
+                const response = await fetch(`https://dev.mindwave.kz${endpoint}`, config);
+                const data = await response.json();
+                displayResponse(response.status, data);
+            } catch (error) {
+                displayError(error);
+            }
+        });
+        
+        function displayResponse(status, data) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = `<span class="${status >= 400 ? 'error' : 'success'}">Status: ${status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+        }
+        
+        function displayError(error) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = `<span class="error">Error:</span>\n\n${error.message || error}`;
+        }
+    </script>
+</body>
+</html>
